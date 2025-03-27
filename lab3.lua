@@ -15,52 +15,51 @@ function readFile(filename)
     return dna
 end
 
+-- 7: Найти минимальную специфичную последовательность для (1), отсутствующую в (2)
+-- 13: Найти минимальную специфичную последовательность для (1), отсутствующую в (3) и (2)
 function find_unique(data1, data2)
-  local max_len = #data1 
+    local max_len = math.min(#data1, 6) 
+    for len = 1, max_len do
+        for i = 1, #data1 - len + 1 do --нач позиции
+            local sub = data1:sub(i, i + len - 1)
+            if not data2:find(sub, 1, true) then 
+                return sub
+            end
+        end
+    end
+    return nil
+end
+
+-- 9: Найти минимальную общую последовательность для (1) и (2)
+function find_common(data1, data2)
+    local max_len = math.min(#data1, #data2, 6)  
     for len = 1, max_len do
         for i = 1, #data1 - len + 1 do
             local sub = data1:sub(i, i + len - 1)
-            local found = false
-            for j = 1, #data2 - len + 1 do
-                if data2:sub(j, j + len - 1) == sub then
-                    found = true
-                    break
-                end
-            end
-            if not found then
-                return sub  
+            if data2:find(sub, 1, true) then
+                return sub
             end
         end
     end
-    return nil  
+    return nil
 end
 
+-- 15: Найти максимальную общую подпоследовательность для (1) и (3)
 function find_lcs(data1, data2)
-    local m, n = #data1, #data2
-    local prev = {}
-    local curr = {}
-    for j = 0, n do prev[j] = 0 end
-
-    local maxLength, endIndex = 0, 0
-
-    for i = 1, m do
-        curr = {}
-        curr[0] = 0
-        for j = 1, n do
-            if data1:sub(i, i) == data2:sub(j, j) then
-                curr[j] = prev[j - 1] + 1
-                if curr[j] > maxLength then
-                    maxLength, endIndex = curr[j], i
+    local longest = ""
+    
+    for i = 1, #data1 do
+        for j = i, #data1 do
+            if j - i + 1 > #longest then
+                local substring = data1:sub(i, j)
+                if data2:find(substring, 1, true) then
+                    longest = substring
                 end
-            else
-                curr[j] = 0
             end
         end
-        prev = curr
     end
-
-    if maxLength == 0 then return "" end
-    return data1:sub(endIndex - maxLength + 1, endIndex)
+    
+    return longest
 end
 
 local covid_wuhan = readFile("origin1.txt")
@@ -71,24 +70,32 @@ if not covid_wuhan or not h5n1 or not covid_delta then
     print("Ошибка: один или несколько файлов не загружены.")
     os.exit(1)
 end
-
-covid_wuhan = covid_wuhan:sub(1, 5000)
+covid_wuhan = covid_wuhan:sub(1, 10000)
 h5n1 = h5n1:sub(1, 5000)
-covid_delta = covid_delta:sub(1, 5000)
+covid_delta = covid_delta:sub(1, 10000)
 
 local unique_covid = find_unique(covid_wuhan, h5n1)
 local unique_h5n1 = find_unique(h5n1, covid_wuhan)
-local common_covid_h5n1 = find_lcs(covid_wuhan, h5n1)
+local common_covid_h5n1 = find_common(covid_wuhan, h5n1)
 
 local unique_covid_all = find_unique(covid_wuhan, h5n1 .. covid_delta)
 local unique_delta_all = find_unique(covid_delta, covid_wuhan .. h5n1)
-local common_covid_delta = find_lcs(covid_wuhan, covid_delta)
-local ratio_common = (#common_covid_delta) / (#covid_wuhan)
 
-print("Уникальная последовательность COVID-19 (Wuhan), отсутствующая в H5N1:", unique_covid)
-print("Уникальная последовательность H5N1, отсутствующая в COVID-19 (Wuhan):", unique_h5n1)
-print("Общая последовательность COVID-19 (Wuhan) и H5N1:", common_covid_h5n1)
-print("Уникальная последовательность COVID-19 (Wuhan), отсутствующая в H5N1 и Delta:", unique_covid_all)
-print("Уникальная последовательность COVID-19 (Delta), отсутствующая в H5N1 и Wuhan:", unique_delta_all)
-print("Общая последовательность COVID-19 (Wuhan) и Delta:", common_covid_delta)
-print("Соотношение длины общей последовательности к длине генома COVID-19 (Wuhan):", ratio_common)
+local common_covid_delta = find_lcs(covid_wuhan, covid_delta)
+local ratio_common = #common_covid_delta / #covid_wuhan
+
+
+print("1. Уникальная последовательность COVID-19 (Wuhan), отсутствующая в H5N1:")
+print(unique_covid)
+print("2. Уникальная последовательность H5N1, отсутствующая в COVID-19 (Wuhan):")
+print(unique_h5n1)
+print("3. Минимальная общая последовательность COVID-19 (Wuhan) и H5N1:")
+print(common_covid_h5n1)
+print("4. Уникальная последовательность COVID-19 (Wuhan), отсутствующая в H5N1 и Delta:")
+print(unique_covid_all)
+print("5. Уникальная последовательность COVID-19 (Delta), отсутствующая в H5N1 и Wuhan:")
+print(unique_delta_all)
+print("6. Максимальная общая подпоследовательность COVID-19 (Wuhan) и Delta:")
+print(common_covid_delta)
+print("7. Соотношение длины общей подпоследовательности к длине генома COVID-19 (Wuhan):")
+print(ratio_common)
